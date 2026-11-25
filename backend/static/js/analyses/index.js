@@ -15,7 +15,8 @@ console.table({ fileInput, selectBtn, analyzeBtn, videoPreview, placeholder, sta
 // =====================================================
 // 2. 설정값 · 상태 변수
 // =====================================================
-const MAX_SIZE_MB = 100; 
+const MAX_SIZE_MB = 100;   // 업로드 최대 크기
+const ALLOWED_EXTS = [".mp4"];   // ai_service/main.py 의 ALLOWED_EXTS 와 항상 같게 유지
 
 let selectedFile = null;   // 지금 선택된 파일 (기능 3에서 [분석] 버튼을 누르면 이걸 업로드)
 let previewUrl = null;     // 미리보기용 임시 주소 (나중에 해제하려고 기억해 둠)
