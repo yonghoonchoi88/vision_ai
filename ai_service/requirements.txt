@@ -1,0 +1,9 @@
+fastapi
+uvicorn[standard]
+python-multipart   # UploadFile(파일 업로드)을 받으려면 필요
+
+# 모델 불러오기·추론용
+scikit-learn
+joblib
+numpy
+pandas
