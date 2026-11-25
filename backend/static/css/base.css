@@ -1,18 +1,21 @@
+/* ===== 색 팔레트 (여기만 바꾸면 전체 색이 바뀜) ===== */
+:root {
+  --color-bg: #404040;           /* 페이지 바깥 배경 */
+  --color-card: #ffffff;         /* 흰 카드 */
+  --color-primary: #4a3fd8;      /* 메인 색 (드롭존) */
+  --color-button: #3b5bdb;       /* 활성 버튼 */
+  --color-disabled: #bdbdbd;     /* 비활성 버튼 */
+  --color-panel: #e3e3e3;        /* 회색 판 (제목 바, 동영상 칸, 결과 박스 기본) */
+  --color-text-muted: #555555;   /* 연한 글자 (상태 메시지) */
+  --color-ok: #3fb950;           /* OK 판정 */
+  --color-ng: #e5534b;           /* NG 판정 */
+}
+
 /* 모든 요소의 크기 계산에 padding·border 포함 */
 *, *::before, *::after { box-sizing: border-box; }
 
 body {
   margin: 0;
   font-family: "Pretendard", "Noto Sans KR", sans-serif;
-  background: #404040;   /* 확인용: 이 색이 보이면 CSS 연결 성공 */
-}
-
-/* ===== 색 팔레트 (여기만 바꾸면 전체 색이 바뀜) ===== */
-:root {
-  --color-primary: #4a3fd8;      /* 메인 색 (드롭존) */
-  --color-button: #3b5bdb;       /* 활성 버튼 */
-  --color-disabled: #bdbdbd;     /* 비활성 버튼 */
-  --color-panel: #e3e3e3;        /* 회색 판 (제목 바, 결과 박스 기본) */
-  --color-ok: #3fb950;           /* OK 판정 */
-  --color-ng: #e5534b;           /* NG 판정 */
+  background: var(--color-bg);
 }
