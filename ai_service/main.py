@@ -25,6 +25,7 @@ from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
+from inference import video_to_input, rf_model
 
 # ── 1) 앱 생성 ────────────────────────────────────────────────
 app = FastAPI(title="Vision AI 추론 서버", version="0.1.0")
@@ -77,11 +78,13 @@ def predict(file: UploadFile = File(...)):
         video_path = Path(tmp.name)
 
     try:
-        # (3) TODO 2단계: video_path → 프레임별 YOLO pose 키포인트 추출
-        # (4) TODO 3단계: 키포인트 → 30스텝 × 38 = 1140개 특성 만들기
-        # (5) TODO 4단계: 랜덤포레스트 predict_proba → 동작 + 확신도
-        #     (유효 프레임이 부족하면 "사람을 인식하지 못했습니다" 에러)
-        return PredictResponse(action="걷기", confidence=0.92)  # ← 지금은 가짜 결과
+        x = video_to_input(video_path)                 # 영상 → (1, 1140)
+        if x is None:                                  # 사람이 잡힌 프레임이 10개 미만
+            raise HTTPException(status_code=422, detail="영상에서 사람을 인식하지 못했습니다.")
+
+        proba = rf_model.predict_proba(x)[0]           # 동작 6개의 확률 (rf_model.classes_ 순서)
+        best = int(proba.argmax())                     # 확률이 가장 높은 칸의 위치
+        return PredictResponse(action=rf_model.classes_[best], confidence=float(proba[best]))
     finally:
         # (6) 성공하든 에러가 나든 임시 파일은 반드시 지운다 (디스크가 쌓이지 않게)
         video_path.unlink(missing_ok=True)
