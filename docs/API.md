@@ -141,7 +141,7 @@ curl -X POST http://localhost:8000/api/analyses/ \
 
 처리 순서: 영상 Frame → YOLO Pose → 사람별 Feature → Sequence(30 step, 1,140차원) → Random Forest 예측
 
-**요청** — `multipart/form-data` *(결정 필요: 6장 참고)*
+**요청** — `multipart/form-data`
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
@@ -151,7 +151,7 @@ curl -X POST http://localhost:8000/api/analyses/ \
 
 | 상태 코드 | 상황 | 본문 |
 |---|---|---|
-| 200 | 예측 성공 | `{"action": "걷기", "confidence": 0.92}` |
+| 200 | 예측 성공 | `{"action": "wave", "confidence": 0.82}` |
 | 400 | 동영상이 아님 | `{"detail": "invalid video file"}` |
 | 422 | 사람(포즈)을 찾지 못함 | `{"detail": "no person detected"}` |
 | 503 | 모델이 로드되지 않음 | `{"detail": "model not loaded"}` |
@@ -169,8 +169,6 @@ curl -X POST http://localhost:8000/api/analyses/ \
 ```json
 { "status": "ok" }
 ```
-
-`model_loaded`가 `false`이면 `.joblib` 모델 파일이 없거나 경로가 틀린 것이다.
 
 ---
 
