@@ -1,0 +1,91 @@
+.drop-zone    { background: var(--color-primary); }
+.btn          { background: var(--color-button); }
+.btn:disabled { background: var(--color-disabled); }
+.result-panel { background: var(--color-ok); }
+
+/* ===== 흰색 페이지 카드 ===== */
+.page {
+  max-width: 1100px;          /* 화면이 아무리 넓어도 1100px까지만 */
+  margin: 40px auto;          /* 위아래 40px, 좌우 auto = 가운데 정렬 */
+  padding: 16px 32px 48px;    /* 위 16, 좌우 32, 아래 48 */
+  background: #fff;           /* 흰색 */
+}
+
+/* ===== 회색 제목 바 ===== */
+.page-header {
+  background: #d9d9d9bb;
+  padding: 8px 16px;
+}
+.page-header h1 {             /* .page-header 안에 있는 h1만 */
+  margin: 0;                  /* h1 기본 여백 제거 */
+  font-size: 1.5rem;          /* 기본 글자 크기의 1.5배 */
+  font-weight: 500;           /* 기본 굵기(700)보다 조금 얇게 */
+}
+
+/* ===== 2열 배치 ===== */
+.analysis-layout {
+  display: grid;                    /* 격자(표) 배치 모드 켜기 */
+  grid-template-columns: 1fr 1fr;   /* 칸 2개, 남는 폭을 1:1로 나눔 */
+  gap: 48px;                        /* 칸 사이 간격 */
+  margin-top: 32px;                 /* 제목 바와의 거리 */
+}
+
+/* ===== 초록 드롭존 ===== */
+.drop-zone {
+  padding: 8px 16px 24px;
+}
+.drop-zone__title {
+  margin: 0 0 8px;           /* 위 0, 좌우 0, 아래 8 */
+  color: #fff;               /* 흰 글자 */
+  font-size: 1.25rem;
+}
+
+/* ===== 회색 동영상 칸 ===== */
+.video-area {
+  aspect-ratio: 16 / 9;      /* 폭에 맞춰 높이를 16:9로 자동 계산 */
+  background: #d9d9d9;
+  display: flex;             /* 안의 글자를 */
+  align-items: center;       /* 세로 가운데 */
+  justify-content: center;   /* 가로 가운데 */
+}
+.video-area__video {
+  width: 100%;               /* 나중에 영상이 나오면 칸을 꽉 채우게 */
+  height: 100%;
+}
+
+/* ===== 버튼 줄 ===== */
+.button-row {
+  display: grid;
+  grid-template-columns: 1fr 1.4fr;   /* 오른쪽 버튼을 조금 더 넓게 (와이어프레임처럼) */
+  gap: 16px;
+  margin-top: 12px;
+}
+
+/* ===== 빨간 버튼 ===== */
+.btn {
+  color: #fff;
+}
+.btn:disabled {
+  background: #bdbdbd;        /* 비활성: 회색으로 아예 바꿔서 확실히 구분 */
+  cursor: not-allowed;
+}
+
+/* ===== 결과 박스 ===== */
+.result-panel {
+  padding: 16px 24px;
+  min-height: 330px;         /* 내용이 적어도 최소 이 높이는 유지 */
+}
+.result-panel__title {
+  text-align: center;        /* "결과"를 가운데로 */
+  font-weight: 500;
+}
+.result-panel__status {
+  color: #555;               /* 상태 메시지는 조금 연하게 */
+}
+
+/* ===== 화면 폭이 768px 이하일 때만 적용 ===== */
+@media (max-width: 768px) {
+  .analysis-layout {
+    grid-template-columns: 1fr;   /* 2열 → 1열 */
+  }
+}

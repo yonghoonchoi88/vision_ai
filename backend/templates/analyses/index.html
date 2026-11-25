@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}AI 분석화면{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/analyses/index.css' %}">
+{% endblock %}
+
+{% block content %}
+  <div class="page">
+  <header class="page-header">
+    <h1>AI 분석화면</h1>
+  </header>
+
+  <main class="analysis-layout">
+    <section class="upload-panel">
+  <!-- 초록 박스 -->
+  <div id="dropZone" class="drop-zone">
+    <p class="drop-zone__title">파일 업로드 (드래그 앤 드롭)</p>
+
+    <!-- 회색 동영상 칸 -->
+    <div class="video-area">
+      <p id="placeholder" class="video-area__placeholder">동영상을 여기로 끌어오세요</p>
+      <video id="videoPreview" class="video-area__video" controls hidden></video>
+    </div>
+  </div>
+
+  <!-- 진짜 파일 선택창 (숨김) -->
+  <input type="file" id="fileInput" accept="video/*" hidden>
+
+  <!-- 빨간 버튼 2개 -->
+  <div class="button-row">
+    <button type="button" id="selectBtn" class="btn">파일선택</button>
+    <button type="button" id="analyzeBtn" class="btn" disabled>동영상 AI 분석</button>
+  </div>
+</section>
+    <section class="result-panel">
+  <h2 class="result-panel__title">결과</h2>
+  <p>예측 동작 (확신도) : <strong id="resultText">-</strong></p>
+  <p id="statusText" class="result-panel__status"></p>
+</section>
+  </main>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/analyses/index.js' %}" defer></script>
+{% endblock %}
