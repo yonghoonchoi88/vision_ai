@@ -69,5 +69,3 @@ Thumbs.db
 
 # ===== Windows에서 복사한 파일의 다운로드 출처 표시 (WSL에 함께 생김) =====
 *:Zone.Identifier
-db.sqlite3
-media/
