@@ -53,7 +53,7 @@ sequenceDiagram
 | # | 이름 | Method | URL | 서버 | 담당 | 상태 |
 |---|---|---|---|---|---|---|
 | 1 | 영상 업로드 | POST | `/api/videos/` | Django | 백엔드 A | ✅ |
-| 2 | 분석 요청 | POST | `/api/analyses/` | Django | 백엔드 B | 🚧 |
+| 2 | 분석 요청 | POST | `/api/analyses/` | Django | 백엔드 B | ✅ |
 | 3 | 동작 예측 (내부용) | POST | `/predict` | FastAPI | AI 서비스 | 📝 |
 | 4 | 서버 상태 확인 | GET | `/health` | FastAPI | AI 서비스 | 📝 |
 
@@ -82,7 +82,7 @@ curl -X POST http://localhost:8000/api/videos/ -F "file=@walk_01.mp4"
 
 ---
 
-### 3-2. 분석 요청 🚧
+### 3-2. 분석 요청 ✅
 
 `POST /api/analyses/` · Django · `backend/analyses/views.py`
 
