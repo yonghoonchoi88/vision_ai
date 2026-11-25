@@ -53,7 +53,7 @@ sequenceDiagram
 | # | 이름 | Method | URL | 서버 | 담당 | 상태 |
 |---|---|---|---|---|---|---|
 | 1 | 영상 업로드 | POST | `/api/videos/` | Django | 백엔드 A | ✅ |
-| 2 | 분석 요청 | POST | `/api/analyses/` | Django | 백엔드 B | 🚧 |
+| 2 | 분석 요청 | POST | `/api/analyses/` | Django | 백엔드 B | ✅ |
 | 3 | 동작 예측 (내부용) | POST | `/predict` | FastAPI | AI 서비스 | 📝 |
 | 4 | 서버 상태 확인 | GET | `/health` | FastAPI | AI 서비스 | 📝 |
 
@@ -75,6 +75,8 @@ sequenceDiagram
 |---|---|---|
 | 201 | 저장 성공 | `{"video_id": 1}` |
 | 400 | 파일 없음 | `{"detail": "file is required"}` |
+| 400 | mp4 가 아님 | `{"detail": "invalid video file"}` |
+| 413 | 200MB 초과 | `{"detail": "file size must be 200MB or less"}` |
 
 ```bash
 curl -X POST http://localhost:8000/api/videos/ -F "file=@walk_01.mp4"
@@ -105,7 +107,8 @@ curl -X POST http://localhost:8000/api/videos/ -F "file=@walk_01.mp4"
 | 201 | 분석·저장 성공 | 아래 JSON |
 | 400 | `video_id` 없음 | `{"detail": "video_id is required"}` |
 | 404 | 해당 영상 없음 | `{"detail": "video not found"}` |
-| 502 | FastAPI 호출 실패 | `{"detail": "AI service error"}` |
+| 400 · 422 등 | FastAPI 가 에러를 보냄 | FastAPI 의 상태 코드와 `detail` 을 그대로 전달 (예: 422 `{"detail": "no person detected"}`) |
+| 502 | FastAPI 에 연결 실패 (꺼짐·시간 초과) | `{"detail": "AI service error"}` |
 
 성공 응답 (201)
 

@@ -35,6 +35,7 @@ def create_analysis(request):
         return JsonResponse({"detail": "video not found"}, status=404)
 
     # 3. 영상 파일을 FastAPI /predict 로 보내기
+    #    FastAPI 서버에 연결 자체가 안 될 때(꺼짐·시간 초과)만 502
     try:
         with video.file.open("rb") as f:
             response = requests.post(
@@ -42,10 +43,20 @@ def create_analysis(request):
                 files={"file": (os.path.basename(video.file.name), f)},
                 timeout=60,
             )
-        response.raise_for_status()
-        result = response.json()
+            
     except requests.RequestException:
         return JsonResponse({"detail": "AI service error"}, status=502)
+
+    # 4. FastAPI가 에러를 보냈으면(400 동영상 아님, 422 사람 인식 실패 등)
+    #    상태 코드와 detail 을 그대로 화면에 넘긴다
+    if response.status_code >= 400:
+        try:
+            detail = response.json().get("detail", "AI service error")
+        except ValueError:
+            detail = "AI service error"
+        return JsonResponse({"detail": detail}, status=response.status_code)
+
+    result = response.json()
 
     # 4. 결과를 Analysis 테이블에 저장
     analysis = Analysis.objects.create(
