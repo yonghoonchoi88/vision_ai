@@ -1,11 +1,13 @@
 # ===== 비밀값 =====
 .env
 .env.*
-!.env.example            # 예시 파일은 공유 (키 이름만, 값은 비움)
+# 예시 파일은 공유 (키 이름만, 값은 비움)
+!.env.example
 
 # ===== Python =====
 __pycache__/
-*.py[cod]                # .pyc, .pyo, .pyd 한 번에
+# .pyc / .pyo / .pyd 한 번에
+*.py[cod]
 .venv/
 venv/
 *.egg-info/
@@ -23,15 +25,20 @@ htmlcov/
 .ipynb_checkpoints/
 
 # ===== 데이터 (절대 커밋 금지: 기업 제공 데이터 포함) =====
+# 폴더는 남기고 내용물만 무시 → 아래 예외(!)가 동작하려면 data/ 가 아니라 data/* 여야 함
 data/*
-!data/.gitkeep           # 폴더 구조만 공유
-!data/README.md          # 데이터 받는 방법은 문서로 공유
+# 폴더 구조와 데이터 받는 방법 문서만 공유
+!data/.gitkeep
+!data/README.md
+# 영상
 *.mp4
 *.avi
 *.mov
-*.c3d                    # VICON 모캡 원본
+# VICON 모캡 원본 및 3D 포맷
+*.c3d
 *.fbx
 *.bvh
+# NumPy 배열
 *.npy
 *.npz
 
@@ -46,10 +53,12 @@ data/*
 *.engine
 
 # ===== 학습·실험 결과물 =====
-runs/                    # YOLO 학습 결과
+# YOLO 학습 결과
+runs/
 outputs/
 logs/
-mlruns/                  # MLflow
+# MLflow / W&B
+mlruns/
 wandb/
 
 # ===== 편집기·OS =====
