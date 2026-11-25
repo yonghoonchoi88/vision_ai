@@ -1,0 +1,19 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- 페이지마다 제목을 바꿀 수 있게 block으로 비워 둠 -->
+  <title>{% block title %}Vision AI{% endblock %}</title>
+  <!-- 공통 스타일 -->
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  <!-- 페이지 전용 CSS가 들어갈 자리 -->
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+  {% block content %}{% endblock %}
+  <!-- 페이지 전용 JS가 들어갈 자리 (body 끝에서 로드) -->
+  {% block extra_js %}{% endblock %}
+</body>
+</html>

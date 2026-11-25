@@ -1,0 +1,8 @@
+/* 모든 요소의 크기 계산에 padding·border 포함 */
+*, *::before, *::after { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: "Pretendard", "Noto Sans KR", sans-serif;
+  background: #404040;   /* 확인용: 이 색이 보이면 CSS 연결 성공 */
+}
