@@ -10,6 +10,6 @@ from .models import Video
 def upload_video(request):
     file = request.FILES.get("file")
     if file is None:
-        return JsonResponse({"error": "file is required"}, status=400)
+        return JsonResponse({"detail": "file is required"}, status=400)
     video = Video.objects.create(file=file)
     return JsonResponse({"video_id": video.id}, status=201)
