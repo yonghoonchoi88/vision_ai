@@ -1,0 +1,62 @@
+# ===== 비밀값 =====
+.env
+.env.*
+!.env.example            # 예시 파일은 공유 (키 이름만, 값은 비움)
+
+# ===== Python =====
+__pycache__/
+*.py[cod]                # .pyc, .pyo, .pyd 한 번에
+.venv/
+venv/
+*.egg-info/
+build/
+dist/
+
+# ===== 테스트·린트 캐시 =====
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# ===== Jupyter =====
+.ipynb_checkpoints/
+
+# ===== 데이터 (절대 커밋 금지: 기업 제공 데이터 포함) =====
+data/*
+!data/.gitkeep           # 폴더 구조만 공유
+!data/README.md          # 데이터 받는 방법은 문서로 공유
+*.mp4
+*.avi
+*.mov
+*.c3d                    # VICON 모캡 원본
+*.fbx
+*.bvh
+*.npy
+*.npz
+
+# ===== 대용량 모델 (README의 '모델 준비' 참고) =====
+*.joblib
+*.pt
+*.pth
+*.onnx
+*.ckpt
+*.h5
+*.tflite
+*.engine
+
+# ===== 학습·실험 결과물 =====
+runs/                    # YOLO 학습 결과
+outputs/
+logs/
+mlruns/                  # MLflow
+wandb/
+
+# ===== 편집기·OS =====
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# ===== Windows에서 복사한 파일의 다운로드 출처 표시 (WSL에 함께 생김) =====
+*:Zone.Identifier
