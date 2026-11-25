@@ -6,6 +6,9 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 
+from django.utils import timezone
+from django.views.decorators.http import require_GET
+
 from videos.models import Video
 
 from .models import Analysis
@@ -75,3 +78,33 @@ def create_analysis(request):
         },
         status=201,
     )
+
+
+@require_GET                                      # GET 만 허용 (읽기 전용이라 CSRF 필요 없음)
+def list_analyses(request):
+    """저장된 분석 기록 목록 (최신순). FastAPI 는 거치지 않고 DB 만 읽는다."""
+    # ?limit=20 처럼 개수를 받되, 너무 많이 요청하지 못하게 최대 100
+    try:
+        limit = min(int(request.GET.get("limit", 20)), 100)
+    except ValueError:
+        limit = 20
+
+    records = (
+        Analysis.objects
+        .select_related("video")                  # Video 를 한 번의 쿼리로 같이 가져옴 (N+1 방지)
+        .order_by("-created_at")[:limit]          # 최신순, 최대 limit 개
+    )
+
+    items = [
+        {
+            "analysis_id": a.id,
+            "video_id": a.video_id,
+            "video_name": os.path.basename(a.video.file.name),   # "videos/test.mp4" → "test.mp4"
+            "action": a.predicted_action,
+            "confidence": a.confidence,
+            # USE_TZ=True 라 DB 에는 UTC 로 저장됨 → 한국 시간으로 바꿔서 글자로
+            "created_at": timezone.localtime(a.created_at).strftime("%Y-%m-%d %H:%M:%S"),
+        }
+        for a in records
+    ]
+    return JsonResponse({"count": len(items), "items": items})
