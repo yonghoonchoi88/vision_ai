@@ -8,6 +8,8 @@ const videoPreview = document.getElementById("videoPreview");  // 동영상 미�
 const placeholder  = document.getElementById("placeholder");   // 안내 문구
 const statusText   = document.getElementById("statusText");    // 상태·에러 메시지 자리
 const resultText   = document.getElementById("resultText");    // 예측 동작 (확신도) 자리  ← ★ 추가
+const historyBody  = document.getElementById("historyBody");   // 기록 표의 줄 자리 (<tbody>)
+const historyEmpty = document.getElementById("historyEmpty");  // "기록 없음" / 에러 문구
 
 // 확인용: 하나라도 null이면 HTML의 id와 철자가 다른 것
 console.table({ fileInput, selectBtn, analyzeBtn, videoPreview, placeholder, statusText, resultText });
@@ -22,7 +24,8 @@ const ALLOWED_EXTS = [".mp4"];   // ai_service/main.py 의 ALLOWED_EXTS 와 항�
 // API 주소 (docs/API.md 기준, Django 끝에는 / 를 붙인다)
 const API = {
   upload: "/api/videos/",      // ① 영상 업로드
-  analyze: "/api/analyses/",   // ② 분석 요청 (STEP 3에서 사용)
+  analyze: "/api/analyses/",   // ② 분석 요청
+  history: "/api/analyses/history/",   // ③ 검사 기록 목록
 };
 
 let selectedFile = null;   // 지금 선택된 파일 (기능 3에서 [분석] 버튼을 누르면 이걸 업로드)
@@ -143,6 +146,55 @@ async function requestAnalysis(videoId) {
   return data;   // { analysis_id, video_id, action, confidence }
 }
 
+// ③ 검사 기록 받기: Django 가 DB(Analysis 테이블)에서 읽어 바로 돌려줌
+async function fetchHistory() {
+  const response = await fetch(`${API.history}?limit=20`);   // method 를 안 쓰면 GET
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.detail || `기록 조회 실패 (HTTP ${response.status})`);
+  }
+  return data.items;   // [{analysis_id, video_name, action, confidence, created_at}, ...]
+}
+
+// 기록 배열 → 표의 줄(tr)로 그리기
+function renderHistory(items) {
+  historyBody.replaceChildren();                     // 기존 줄 모두 지우기 (다시 그릴 때 중복 방지)
+  historyEmpty.textContent = "아직 저장된 기록이 없어요.";
+  historyEmpty.hidden = items.length > 0;            // 0건일 때만 안내 문구 보이기
+
+  for (const item of items) {
+    const tr = document.createElement("tr");         // 새 줄 만들기
+    const values = [
+      item.analysis_id,
+      item.created_at,
+      item.video_name,
+      item.action,
+      `${Math.round(item.confidence * 100)}%`,       // 0.6533 → "65%"
+    ];
+    values.forEach((value, i) => {
+      const td = document.createElement("td");       // 새 칸 만들기
+      td.textContent = value;                        // ★ innerHTML 이 아니라 textContent (안전)
+      if (i === 0 || i === 4) td.className = "num";  // 번호·확신도는 숫자 정렬 (CSS td.num)
+      tr.appendChild(td);                            // 칸을 줄에 붙이기
+    });
+    historyBody.appendChild(tr);                     // 줄을 표에 붙이기
+  }
+}
+
+// 받기 + 그리기 + 에러 처리를 한 번에
+async function loadHistory() {
+  try {
+    const items = await fetchHistory();
+    renderHistory(items);
+    console.log(`검사 기록 ${items.length}건 표시`);
+  } catch (error) {
+    console.error("기록 조회 실패:", error);
+    historyBody.replaceChildren();
+    historyEmpty.hidden = false;
+    historyEmpty.textContent = `기록을 불러오지 못했어요: ${error.message}`;
+  }
+}
+
 // =====================================================
 // 4. 이벤트 연결 (사용자가 뭔가 하면 → 어떤 함수를 실행할지)
 // =====================================================
@@ -184,6 +236,7 @@ analyzeBtn.addEventListener("click", async () => {
     const percent = Math.round(result.confidence * 100);
     resultText.textContent = `${result.action} (${percent}%)`;
     statusText.textContent = "분석 완료";
+    await loadHistory();
   } catch (error) {
     console.error("처리 실패:", error);
     statusText.textContent = `오류: ${error.message}`;
@@ -192,3 +245,6 @@ analyzeBtn.addEventListener("click", async () => {
     selectBtn.disabled = false;
   }
 });
+
+// 페이지가 열리면 검사 기록을 한 번 불러와서 표 채우기
+loadHistory();

@@ -31,18 +31,41 @@
       <!-- 진짜 파일 선택창 (숨김) -->
       <input type="file" id="fileInput" accept="video/mp4,.mp4" hidden>
 
-      <!-- 빨간 버튼 2개 -->
+      <!-- 버튼 2개 -->
       <div class="button-row">
         <button type="button" id="selectBtn" class="btn">파일선택</button>
         <button type="button" id="analyzeBtn" class="btn" disabled>동영상 AI 분석</button>
       </div>
     </section>
+
     <section class="result-panel">
       <h2 class="result-panel__title">결과</h2>
       <p>예측 동작 (확신도) : <strong id="resultText">-</strong></p>
       <p id="statusText" class="result-panel__status"></p>
     </section>
   </main>
+
+  <!-- 검사 기록 (Django DB 에서 읽어 옴, FastAPI 안 거침) -->
+  <section class="history-panel">
+    <h2 class="history-panel__title">검사 기록</h2>
+
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>번호</th>
+          <th>저장 시각</th>
+          <th>영상</th>
+          <th>예측 동작</th>
+          <th>확신도</th>
+        </tr>
+      </thead>
+      <!-- 줄(tr)은 JS 가 채워 넣음 -->
+      <tbody id="historyBody"></tbody>
+    </table>
+
+    <p id="historyEmpty" class="history-panel__empty" hidden>아직 저장된 기록이 없어요.</p>
+  </section>
+  
 </div>
 {% endblock %}
 
