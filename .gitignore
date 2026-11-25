@@ -43,6 +43,9 @@ data/*
 *.npz
 
 # ===== 대용량 모델 (README의 '모델 준비' 참고) =====
+ai_service/models/
+*.joblib
+*.pt
 *.joblib
 *.pt
 *.pth

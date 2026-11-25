@@ -5,11 +5,12 @@ const fileInput    = document.getElementById("fileInput");     // 숨겨진 파�
 const selectBtn    = document.getElementById("selectBtn");     // [파일선택] 버튼
 const analyzeBtn   = document.getElementById("analyzeBtn");    // [동영상 AI 분석] 버튼
 const videoPreview = document.getElementById("videoPreview");  // 동영상 미리보기 칸
-const placeholder  = document.getElementById("placeholder");   // "동영상을 여기로 끌어오세요" 문구
+const placeholder  = document.getElementById("placeholder");   // 안내 문구
 const statusText   = document.getElementById("statusText");    // 상태·에러 메시지 자리
+const resultText   = document.getElementById("resultText");    // 예측 동작 (확신도) 자리  ← ★ 추가
 
 // 확인용: 하나라도 null이면 HTML의 id와 철자가 다른 것
-console.table({ fileInput, selectBtn, analyzeBtn, videoPreview, placeholder, statusText });
+console.table({ fileInput, selectBtn, analyzeBtn, videoPreview, placeholder, statusText, resultText });
 
 
 // =====================================================
@@ -125,6 +126,23 @@ async function uploadVideo(file) {
   return data.video_id;   // 성공: 번호표
 }
 
+// ② 분석 요청: video_id를 보내고 AI 결과 받기
+async function requestAnalysis(videoId) {
+  const response = await fetch(API.analyze, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },   // JSON으로 보낸다고 알림
+    body: JSON.stringify({ video_id: videoId }),       // JS 객체 → JSON 글자
+  });
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(data.detail || `분석 실패 (HTTP ${response.status})`);
+  }
+
+  return data;   // { analysis_id, video_id, action, confidence }
+}
+
 // =====================================================
 // 4. 이벤트 연결 (사용자가 뭔가 하면 → 어떤 함수를 실행할지)
 // =====================================================
@@ -143,25 +161,33 @@ fileInput.addEventListener("change", () => {
   fileInput.value = "";       // 초기화 → 같은 파일을 다시 골라도 change가 일어나게
 });
 
-// [동영상 AI 분석] 버튼을 클릭하면 → 업로드
+// [동영상 AI 분석] 버튼을 클릭하면 → ① 업로드 → ② 분석 → 결과 표시
 analyzeBtn.addEventListener("click", async () => {
-  if (!selectedFile) return;            // 안전장치: 선택된 파일이 없으면 아무것도 안 함
+  if (!selectedFile) return;
 
-  // 처리하는 동안 버튼 잠그기 (두 번 클릭 → 두 번 업로드 방지)
   analyzeBtn.disabled = true;
   selectBtn.disabled = true;
+  resultText.textContent = "-";                       // 이전 결과 지우기
   statusText.textContent = "업로드 중...";
 
   try {
+    // ① 업로드
     const videoId = await uploadVideo(selectedFile);
     console.log("업로드 완료, video_id:", videoId);
-    statusText.textContent = `업로드 완료 (video_id: ${videoId})`;
-    // TODO STEP 3: videoId 로 분석 요청
+
+    // ② 분석 요청
+    statusText.textContent = "AI 분석 중... (영상 길이에 따라 수십 초 걸릴 수 있어요)";
+    const result = await requestAnalysis(videoId);
+    console.log("분석 결과:", result);
+
+    // 결과 표시: 0.8734 → 87
+    const percent = Math.round(result.confidence * 100);
+    resultText.textContent = `${result.action} (${percent}%)`;
+    statusText.textContent = "분석 완료";
   } catch (error) {
-    console.error("업로드 실패:", error);
+    console.error("처리 실패:", error);
     statusText.textContent = `오류: ${error.message}`;
   } finally {
-    // 성공하든 실패하든 버튼 다시 풀기
     analyzeBtn.disabled = false;
     selectBtn.disabled = false;
   }
