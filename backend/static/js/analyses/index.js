@@ -18,17 +18,31 @@ console.table({ fileInput, selectBtn, analyzeBtn, videoPreview, placeholder, sta
 const MAX_SIZE_MB = 100;   // 업로드 최대 크기
 const ALLOWED_EXTS = [".mp4"];   // ai_service/main.py 의 ALLOWED_EXTS 와 항상 같게 유지
 
+// API 주소 (docs/API.md 기준, Django 끝에는 / 를 붙인다)
+const API = {
+  upload: "/api/videos/",      // ① 영상 업로드
+  analyze: "/api/analyses/",   // ② 분석 요청 (STEP 3에서 사용)
+};
+
 let selectedFile = null;   // 지금 선택된 파일 (기능 3에서 [분석] 버튼을 누르면 이걸 업로드)
 let previewUrl = null;     // 미리보기용 임시 주소 (나중에 해제하려고 기억해 둠)
 
 // =====================================================
 // 3. 기능 함수
 // =====================================================
+// 파일 이름에서 확장자 꺼내기: "Walk_01.MP4" → ".mp4"
+function getExtension(fileName) {
+  const dotIndex = fileName.lastIndexOf(".");          // 마지막 점의 위치
+  if (dotIndex === -1) return "";                      // 점이 없으면 확장자 없음
+  return fileName.slice(dotIndex).toLowerCase();       // 점부터 끝까지 + 소문자로
+}
+
 // 파일 검사: 문제가 있으면 에러 메시지(문자열), 없으면 null
 function validateVideo(file) {
-  // ① 동영상이 맞는지
-  if (!file.type.startsWith("video/")) {
-    return `동영상 파일만 올릴 수 있어요. (선택한 파일: ${file.name})`;
+  // ① mp4 동영상이 맞는지 (종류 + 확장자 둘 다 확인)
+  const ext = getExtension(file.name);
+  if (!file.type.startsWith("video/") || !ALLOWED_EXTS.includes(ext)) {
+    return `mp4 동영상만 올릴 수 있어요. (선택한 파일: ${file.name})`;
   }
 
   // ② 크기가 기준 이하인지
@@ -51,7 +65,7 @@ function resetPreview() {
   videoPreview.removeAttribute("src"); // 재생기에서 영상 빼기
   videoPreview.load();                 // 재생기 상태 초기화
   videoPreview.hidden = true;          // 재생기 숨기기
-  placeholder.hidden = false;          // "동영상을 여기로 끌어오세요" 다시 보이기
+  placeholder.hidden = false;          // 안내 문구 다시 보이기
 
   analyzeBtn.disabled = true;          // 분석 버튼 끄기
 }
@@ -87,6 +101,29 @@ function handleFile(file) {
   console.log("검사 통과 → 미리보기 표시");
 }
 
+// ① 영상 업로드: 파일을 Django에 보내고 video_id 받기
+async function uploadVideo(file) {
+  // 택배 상자(FormData)에 파일 담기
+  // "file" = Django가 request.FILES.get("file") 로 꺼내는 이름 → 한 글자도 다르면 안 됨
+  const formData = new FormData();
+  formData.append("file", file);
+
+  // 보내고 답 기다리기 (Content-Type 은 브라우저가 multipart/form-data 로 자동 설정)
+  const response = await fetch(API.upload, {
+    method: "POST",
+    body: formData,
+  });
+
+  // 응답 본문을 JSON으로 읽기 (서버가 JSON이 아닌 에러 페이지를 보내도 멈추지 않게 빈 객체로 대체)
+  const data = await response.json().catch(() => ({}));
+
+  // 200~299가 아니면 실패 → 서버가 준 detail 메시지로 에러 던지기
+  if (!response.ok) {
+    throw new Error(data.detail || `업로드 실패 (HTTP ${response.status})`);
+  }
+
+  return data.video_id;   // 성공: 번호표
+}
 
 // =====================================================
 // 4. 이벤트 연결 (사용자가 뭔가 하면 → 어떤 함수를 실행할지)
@@ -106,3 +143,26 @@ fileInput.addEventListener("change", () => {
   fileInput.value = "";       // 초기화 → 같은 파일을 다시 골라도 change가 일어나게
 });
 
+// [동영상 AI 분석] 버튼을 클릭하면 → 업로드
+analyzeBtn.addEventListener("click", async () => {
+  if (!selectedFile) return;            // 안전장치: 선택된 파일이 없으면 아무것도 안 함
+
+  // 처리하는 동안 버튼 잠그기 (두 번 클릭 → 두 번 업로드 방지)
+  analyzeBtn.disabled = true;
+  selectBtn.disabled = true;
+  statusText.textContent = "업로드 중...";
+
+  try {
+    const videoId = await uploadVideo(selectedFile);
+    console.log("업로드 완료, video_id:", videoId);
+    statusText.textContent = `업로드 완료 (video_id: ${videoId})`;
+    // TODO STEP 3: videoId 로 분석 요청
+  } catch (error) {
+    console.error("업로드 실패:", error);
+    statusText.textContent = `오류: ${error.message}`;
+  } finally {
+    // 성공하든 실패하든 버튼 다시 풀기
+    analyzeBtn.disabled = false;
+    selectBtn.disabled = false;
+  }
+});
