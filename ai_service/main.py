@@ -41,7 +41,7 @@ ALLOWED_EXTS = {".mp4"}
 # (명세서: 400 = 파일이 없거나 동영상이 아님)
 @app.exception_handler(RequestValidationError)
 async def validation_error_handler(request, exc):
-    return JSONResponse(status_code=400, content={"detail": "동영상 파일이 필요합니다."})
+    return JSONResponse(status_code=400, content={"detail": "file is required"})
 
 
 # ── 2) 응답 모양(스키마) 정의 ─────────────────────────────────
@@ -69,7 +69,7 @@ def predict(file: UploadFile = File(...)):
     # (1) 확장자 검사 → 동영상이 아니면 400
     ext = Path(file.filename or "").suffix.lower()
     if ext not in ALLOWED_EXTS:
-        raise HTTPException(status_code=400, detail="동영상 파일만 업로드할 수 있습니다.")
+        raise HTTPException(status_code=400, detail="invalid video file")
 
     # (2) 받은 파일을 임시 파일로 저장
     #     OpenCV(cv2.VideoCapture)는 '파일 경로'로 영상을 읽기 때문에 디스크에 한 번 써 둔다.
@@ -80,7 +80,7 @@ def predict(file: UploadFile = File(...)):
     try:
         x = video_to_input(video_path)                 # 영상 → (1, 1140)
         if x is None:                                  # 사람이 잡힌 프레임이 10개 미만
-            raise HTTPException(status_code=422, detail="영상에서 사람을 인식하지 못했습니다.")
+            raise HTTPException(status_code=422, detail="no person detected")
 
         proba = rf_model.predict_proba(x)[0]           # 동작 6개의 확률 (rf_model.classes_ 순서)
         best = int(proba.argmax())                     # 확률이 가장 높은 칸의 위치
