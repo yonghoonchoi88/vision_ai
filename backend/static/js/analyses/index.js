@@ -15,13 +15,27 @@ console.table({ fileInput, selectBtn, analyzeBtn, videoPreview, placeholder, sta
 // =====================================================
 // 2. 설정값 · 상태 변수
 // =====================================================
-// (STEP 3, 4에서 채움)
+const MAX_SIZE_MB = 100; 
 
 
 // =====================================================
 // 3. 기능 함수
 // =====================================================
-// (STEP 3, 4에서 채움)
+// 파일 검사: 문제가 있으면 에러 메시지(문자열), 없으면 null
+function validateVideo(file) {
+  // ① 동영상이 맞는지
+  if (!file.type.startsWith("video/")) {
+    return `동영상 파일만 올릴 수 있어요. (선택한 파일: ${file.name})`;
+  }
+
+  // ② 크기가 기준 이하인지
+  const sizeMB = file.size / (1024 * 1024);
+  if (sizeMB > MAX_SIZE_MB) {
+    return `파일이 너무 커요. (${sizeMB.toFixed(1)}MB / 최대 ${MAX_SIZE_MB}MB)`;
+  }
+
+  return null;   // 통과
+}
 
 
 // =====================================================
@@ -45,4 +59,17 @@ fileInput.addEventListener("change", () => {
   console.log("이름:", file.name);
   console.log("종류:", file.type);
   console.log("크기:", (file.size / (1024 * 1024)).toFixed(1) + " MB");
+
+  const error = validateVideo(file);
+  if (error) {
+    statusText.textContent = error;   // 화면의 결과 영역에 에러 표시
+    console.warn("검사 실패:", error);
+    fileInput.value = "";             // 초기화 → 같은 파일을 다시 골라도 change가 일어나게
+    return;
+  }
+
+  statusText.textContent = `선택됨: ${file.name}`;
+  console.log("검사 통과");
+
 });
+
