@@ -18,8 +18,11 @@ from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
 
+from videos.views import upload_video
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path("api/videos/", upload_video),
     # 임시: analysis 앱이 생기기 전까지 base.html 확인용
     path('', TemplateView.as_view(template_name='base.html')),
 ]
