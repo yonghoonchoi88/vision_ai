@@ -58,14 +58,51 @@ def create_analysis(request):
 
     result = response.json()
 
-    # 4. 결과를 Analysis 테이블에 저장
-    analysis = Analysis.objects.create(
-        video=video,
-        predicted_action=result["action"],
-        confidence=result["confidence"],
+    # 5. ★ 저장하지 않고 결과만 돌려준다 ★
+    #    사용자가 화면에서 [저장]을 누르면 save_analysis 로 다시 보낸다.
+    return JsonResponse(
+        {
+            "video_id": video.id,
+            "action": result["action"],
+            "confidence": result["confidence"],
+        },
+        status=200,
     )
 
-    # 5. 저장한 결과 돌려주기
+@csrf_exempt
+@require_POST
+def save_analysis(request):
+    # 1. 요청 꺼내기: { "video_id": 3, "action": "걷기", "confidence": 0.92 }
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        data = {}
+
+    video_id = data.get("video_id")
+    if video_id is None:
+        return JsonResponse({"detail": "video_id is required"}, status=400)
+    try:
+        video = Video.objects.get(id=video_id)
+    except Video.DoesNotExist:
+        return JsonResponse({"detail": "video not found"}, status=404)
+
+    # 2. 값 검사 (화면이 보낸 값을 그대로 믿지 않는다)
+    action = data.get("action")
+    confidence = data.get("confidence")
+    if not isinstance(action, str) or not (1 <= len(action) <= 50):
+        return JsonResponse({"detail": "invalid action"}, status=400)
+    if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) \
+            or not (0.0 <= confidence <= 1.0):
+        return JsonResponse({"detail": "invalid confidence"}, status=400)
+
+    # 3. 저장
+    analysis = Analysis.objects.create(
+        video=video,
+        predicted_action=action,
+        confidence=float(confidence),
+    )
+
+    # 4. 저장한 결과 돌려주기
     return JsonResponse(
         {
             "analysis_id": analysis.id,
