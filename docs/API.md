@@ -1,231 +1,174 @@
-# Vision AI API 명세서
+# API 명세
 
-> 영상 업로드 → AI 동작 분석 → 결과 저장/표시 흐름의 API 약속 문서입니다.
-> 코드와 다르게 바뀌면 이 문서를 먼저 고치고 팀에 공유합니다.
+> 마지막 수정: 2026-11-25 · 검사 기록 표 추가 + 분석 결과 자동 저장으로 변경
 
-| 항목 | 내용 |
-|---|---|
-| 최종 수정 | 2026-11-25 |
-| 상태 표기 | ✅ 구현 완료 · 🚧 구현 중 · 📝 설계만 |
+## 전체 흐름
 
----
-
-## 1. 전체 흐름
-
-```mermaid
-sequenceDiagram
-    participant W as 화면 (Browser)
-    participant D as Django (backend)
-    participant F as FastAPI (ai_service)
-
-    W->>D: ① POST /api/videos/ (영상 파일)
-    D-->>W: {"video_id": 1}
-    W->>D: ② POST /api/analyses/ {"video_id": 1}
-    D->>F: ③ POST /predict (영상 파일)
-    F-->>D: {"action": "wave", "confidence": 0.82}
-    D->>D: Analysis 테이블에 저장
-    D-->>W: {"analysis_id": 15, "video_id": 1, "action": "wave", "confidence": 0.82}
+```
+[브라우저 JS]
+   │ ① POST /api/videos/            영상 업로드 → video_id
+   │ ② POST /api/analyses/          분석 요청 → 결과 + 자동 저장
+   │ ③ GET  /api/analyses/history/  검사 기록 조회 → 표
+   ▼
+[Django :8000] ──(②일 때만)──▶ [FastAPI :8001] POST /predict
+   │
+   ▼
+[SQLite] Video, Analysis
 ```
 
-| 화면 요소 | 호출 API |
-|---|---|
-| 파일선택 / 드래그 앤 드롭 | 없음 (브라우저에서 처리) |
-| 동영상 나오는 곳 (미리보기) | 없음 (`URL.createObjectURL()`) |
-| 동영상 AI 분석 버튼 | ① 업로드 → ② 분석 요청 순서로 호출 |
-| 결과 영역 (예측 동작, 확신도) | ②의 응답으로 표시 |
+- 브라우저는 **Django(8000)에만** 요청합니다. FastAPI는 Django가 내부에서만 부릅니다.
+- ③ 검사 기록 조회는 FastAPI를 거치지 않고 Django가 DB에서 바로 읽습니다.
+
+## 한눈에 보기
+
+| # | 메서드 | URL | 하는 일 | 성공 |
+|---|---|---|---|---|
+| ① | POST | `/api/videos/` | mp4 업로드, Video 저장 | 201 |
+| ② | POST | `/api/analyses/` | FastAPI 추론 → **Analysis 자동 저장** | 201 |
+| ③ | GET | `/api/analyses/history/` | 저장된 검사 기록 목록 | 200 |
+| - | POST | `/predict` (FastAPI) | 영상 → 동작 추론 (Django 전용) | 200 |
 
 ---
 
-## 2. 공통 규칙
+## ① 영상 업로드
 
-| 항목 | 내용 |
-|---|---|
-| Django 주소 | `http://localhost:8000` |
-| FastAPI 주소 | `http://localhost:8001` |
-| 데이터 형식 | JSON (파일 업로드만 `multipart/form-data`) |
-| URL 끝 슬래시 | Django API는 끝에 `/` 를 붙인다 (`/api/videos/`) |
-| 에러 응답 형식 | `{"detail": "에러 메시지"}` (Django·FastAPI 공통) |
+`POST /api/videos/`
 
----
-
-## 3. API 목록
-
-| # | 이름 | Method | URL | 서버 | 담당 | 상태 |
-|---|---|---|---|---|---|---|
-| 1 | 영상 업로드 | POST | `/api/videos/` | Django | 백엔드 A | ✅ |
-| 2 | 분석 요청 | POST | `/api/analyses/` | Django | 백엔드 B | ✅ |
-| 3 | 동작 예측 (내부용) | POST | `/predict` | FastAPI | AI 서비스 | 📝 |
-| 4 | 서버 상태 확인 | GET | `/health` | FastAPI | AI 서비스 | 📝 |
-
----
-
-### 3-1. 영상 업로드 ✅
-
-`POST /api/videos/` · Django · `backend/videos/views.py`
-
-**요청** — `multipart/form-data`
+**요청** `multipart/form-data`
 
 | 필드 | 타입 | 필수 | 설명 |
 |---|---|---|---|
-| `file` | File | O | 동영상 파일 |
+| `file` | 파일 | ✅ | `.mp4`, 최대 200MB |
 
-**응답**
-
-| 상태 코드 | 상황 | 본문 |
-|---|---|---|
-| 201 | 저장 성공 | `{"video_id": 1}` |
-| 400 | 파일 없음 | `{"detail": "file is required"}` |
-| 400 | mp4 가 아님 | `{"detail": "invalid video file"}` |
-| 413 | 200MB 초과 | `{"detail": "file size must be 200MB or less"}` |
-
-```bash
-curl -X POST http://localhost:8000/api/videos/ -F "file=@walk_01.mp4"
-```
-
----
-
-### 3-2. 분석 요청 ✅
-
-`POST /api/analyses/` · Django · `backend/analyses/views.py`
-
-업로드된 영상을 FastAPI(3-3)로 보내 예측하고, 결과를 `Analysis` 테이블에 저장한 뒤 돌려준다.
-
-**요청** — `application/json`
+**응답 201**
 
 ```json
-{ "video_id": 1 }
+{ "video_id": 3 }
 ```
 
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| `video_id` | int | O | 3-1에서 받은 영상 ID |
+**에러**
 
-**응답**
+| 코드 | 언제 |
+|---|---|
+| 400 | 파일 없음, mp4가 아님, 200MB 초과 |
+| 405 | POST가 아닌 요청 |
 
-| 상태 코드 | 상황 | 본문 |
-|---|---|---|
-| 201 | 분석·저장 성공 | 아래 JSON |
-| 400 | `video_id` 없음 | `{"detail": "video_id is required"}` |
-| 404 | 해당 영상 없음 | `{"detail": "video not found"}` |
-| 400 · 422 등 | FastAPI 가 에러를 보냄 | FastAPI 의 상태 코드와 `detail` 을 그대로 전달 (예: 422 `{"detail": "no person detected"}`) |
-| 502 | FastAPI 에 연결 실패 (꺼짐·시간 초과) | `{"detail": "AI service error"}` |
+**예시**
 
-성공 응답 (201)
+```bash
+curl -X POST http://localhost:8000/api/videos/ -F "file=@sample.mp4"
+```
+
+---
+
+## ② 분석 요청 (+ 자동 저장)
+
+`POST /api/analyses/`
+
+Django가 업로드된 영상을 FastAPI `/predict`로 보내고, 받은 결과를 **바로 Analysis 테이블에 저장**한 뒤 돌려줍니다.
+브라우저가 결과를 다시 보내 저장하는 단계는 없습니다(결과 조작 방지).
+
+**요청** `application/json`
+
+```json
+{ "video_id": 3 }
+```
+
+**응답 201**
 
 ```json
 {
-  "analysis_id": 15,
-  "video_id": 1,
+  "analysis_id": 6,
+  "video_id": 3,
   "action": "wave",
-  "confidence": 0.82
+  "confidence": 0.6512
 }
 ```
 
-| 응답 필드 | 타입 | 설명 | DB 칸 |
-|---|---|---|---|
-| `analysis_id` | int | 저장된 분석 결과 ID (최근분석이력·상세 조회용) | `id` |
-| `video_id` | int | 분석한 영상 ID | `video_id` |
-| `action` | string | 예측 동작 (5장 클래스 목록 중 하나) | `predicted_action` |
-| `confidence` | float | 확신도 0~1 (화면에는 82%처럼 표시) | `confidence` |
+| 필드 | 설명 |
+|---|---|
+| `analysis_id` | 저장된 검사 기록 번호 |
+| `action` | 예측 동작 이름 |
+| `confidence` | 확신도 0.0 ~ 1.0 (화면에는 % 로 표시) |
+
+**에러** (에러가 나면 **저장하지 않습니다**)
+
+| 코드 | 언제 | `detail` |
+|---|---|---|
+| 400 | `video_id` 없음 | `video_id is required` |
+| 404 | 없는 `video_id` | `video not found` |
+| 400 / 422 | FastAPI가 거절 (동영상 아님, 사람 인식 실패 등) | FastAPI의 `detail` 그대로 |
+| 502 | FastAPI 서버 꺼짐·연결 실패·60초 초과 | `AI service error` |
+
+**예시**
 
 ```bash
 curl -X POST http://localhost:8000/api/analyses/ \
      -H "Content-Type: application/json" \
-     -d '{"video_id": 1}'
+     -d '{"video_id": 3}'
 ```
 
 ---
 
-### 3-3. 동작 예측 (내부용) 📝
+## ③ 검사 기록 조회
 
-`POST /predict` · FastAPI · `ai_service/main.py`
+`GET /api/analyses/history/`
 
-화면에서는 직접 호출하지 않는다. **Django(3-2)만 호출한다.**
+**쿼리**
 
-처리 순서: 영상 Frame → YOLO Pose → 사람별 Feature → Sequence(30 step, 1,140차원) → Random Forest 예측
-
-**요청** — `multipart/form-data`
-
-| 필드 | 타입 | 필수 | 설명 |
-|---|---|---|---|
-| `file` | File | O | 동영상 파일 |
-
-**응답**
-
-| 상태 코드 | 상황 | 본문 |
+| 이름 | 기본값 | 설명 |
 |---|---|---|
-| 200 | 예측 성공 | `{"action": "wave", "confidence": 0.82}` |
-| 400 | 동영상이 아님 | `{"detail": "invalid video file"}` |
-| 422 | 사람(포즈)을 찾지 못함 | `{"detail": "no person detected"}` |
-| 503 | 모델이 로드되지 않음 | `{"detail": "model not loaded"}` |
+| `limit` | 20 | 가져올 개수, 최대 100. 숫자가 아니면 20 |
 
----
-
-### 3-4. 서버 상태 확인 📝
-
-`GET /health` · FastAPI · `ai_service/main.py`
-
-입력 없음. 서버가 켜져 있는지, 모델이 로드됐는지 확인한다. Django가 3-3을 호출하기 전 점검용으로도 쓸 수 있다.
-
-**응답** — 200
+**응답 200** (최신순)
 
 ```json
-{ "status": "ok" }
+{
+  "count": 2,
+  "items": [
+    {
+      "analysis_id": 6,
+      "video_id": 3,
+      "video_name": "sample.mp4",
+      "action": "wave",
+      "confidence": 0.6512,
+      "created_at": "2026-11-25 19:24:10"
+    }
+  ]
+}
+```
+
+- `created_at`은 한국 시간(`Asia/Seoul`), `YYYY-MM-DD HH:MM:SS`
+- 기록이 없으면 `{"count": 0, "items": []}`
+
+**예시**
+
+```bash
+curl "http://localhost:8000/api/analyses/history/?limit=5"
 ```
 
 ---
 
-## 4. DB 테이블
+## (내부) FastAPI 추론
 
-### Video — `videos` 앱 (백엔드 A)
+`POST http://localhost:8001/predict` · **Django만 호출합니다. 브라우저에서 부르지 마세요.**
 
-| 칸 | 타입 | 설명 |
-|---|---|---|
-| `id` | int (PK) | 자동 증가 |
-| `file` | FileField | `media/videos/` 에 저장 |
-| `created_at` | DateTime | 업로드 시각 (자동) |
+**요청** `multipart/form-data` · `file`: 영상 파일
 
-### Analysis — `analyses` 앱 (백엔드 B)
+**응답 200**
 
-| 칸 | 타입 | 설명 |
-|---|---|---|
-| `id` | int (PK) | 자동 증가 |
-| `video` | ForeignKey → `videos.Video` | 분석한 영상 (영상 1개 : 분석 N개, 영상 삭제 시 함께 삭제) |
-| `predicted_action` | CharField(50) | 예측 동작 |
-| `confidence` | Float | 확신도 0~1 |
-| `created_at` | DateTime | 분석 시각 (자동) |
+```json
+{ "action": "wave", "confidence": 0.6512 }
+```
 
-DB: 개발 중에는 SQLite(`backend/db.sqlite3`), 이후 PostgreSQL로 전환 예정 (백엔드 A).
+**파이프라인**: YOLO11n-pose → 프레임당 특징 38개 → 30프레임 시퀀스 → (1, 1140) → Random Forest
 
 ---
 
-## 5. 동작 클래스 목록
+## 변경 이력
 
-`from_b4/rf_training_info.json` 기준 6개. `action` 값은 아래 중 하나다.
-
-| `action` 값 | 동작 |
+| 날짜 | 변경 |
 |---|---|
-| `bend_return` | 숙였다 돌아오기 |
-| `drink_return` | 마시는 동작 후 돌아오기 |
-| `leg_raise_lower` | 다리 들었다 내리기 |
-| `sit_stand` | 앉았다 일어서기 |
-| `walk_turn_walk` | 걷다 돌아서 걷기 |
-| `wave` | 손 흔들기 |
-
----
-
-## 6. 폴더·앱 이름
-
-```
-vision_ai/
-├── backend/            # Django
-│   ├── config/         # 프로젝트 설정 (settings.py, urls.py)
-│   ├── videos/         # 영상 업로드 (백엔드 A)
-│   └── analyses/       # AI 분석 요청·저장 (백엔드 B)
-├── ai_service/         # FastAPI (AI 추론)
-├── from_b4/            # 학습 정보 (Feature 컬럼, 학습 설정)
-└── docs/
-    └── API.md          # 이 문서
-```
-
-합칠 때 충돌이 잘 나는 곳: `config/settings.py` 의 `INSTALLED_APPS`, `config/urls.py`, `requirements.txt` → 양쪽 줄을 모두 살린다.
+| 2026-11-25 | `POST /api/analyses/` 가 다시 **자동 저장 + 201 + analysis_id** 반환 |
+| 2026-11-25 | `POST /api/analyses/save/` **삭제** (클라이언트가 보낸 결과를 저장하던 경로) |
+| 2026-11-25 | `GET /api/analyses/history/` 추가 |
