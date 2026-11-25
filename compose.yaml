@@ -5,6 +5,11 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      AI_SERVICE_URL: http://ai_service:8000
 
   ai_service:
     build: ./ai_service
