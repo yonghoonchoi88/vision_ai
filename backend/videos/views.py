@@ -4,7 +4,7 @@ from django.views.decorators.http import require_POST
 
 from .models import Video
 
-MAX_SIZE = 200 * 1024 * 1024
+MAX_SIZE = 100 * 1024 * 1024
 
 @csrf_exempt
 @require_POST
