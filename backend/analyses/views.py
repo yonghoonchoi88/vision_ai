@@ -13,8 +13,8 @@ from videos.models import Video
 
 from .models import Analysis
 
-# FastAPI 주소: 내 컴퓨터에서는 기본값(localhost:8001)을 쓰고,
-# Docker 등 다른 환경에서는 AI_SERVICE_URL 환경변수로 바꿔서 쓴다.
+# FastAPI 주소: 로컬에서 uvicorn을 8001 포트로 띄운 AI 서버를 부른다.
+# (필요하면 AI_SERVICE_URL 환경변수로 바꿀 수 있다.)
 AI_SERVICE_URL = os.environ.get("AI_SERVICE_URL", "http://localhost:8001")
 
 

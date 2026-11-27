@@ -53,7 +53,7 @@ class PredictResponse(BaseModel):
 
 
 # ── 3) 헬스 체크 ─────────────────────────────────────────────
-# "서버 살아있어?"를 확인하는 용도. Django나 Docker가 AI 서버 상태를 볼 때 쓴다.
+# "서버 살아있어?"를 확인하는 용도. Django가 AI 서버 상태를 볼 때 쓴다.
 @app.get("/health")
 def health():
     return {"status": "ok"}
